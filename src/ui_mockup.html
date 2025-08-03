@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>StapuBox Sports Tournaments</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+            color: #ffffff;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        form, .filters, table {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px auto;
+            width: 80%;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+            animation: fadeIn 1.5s ease-in-out;
+        }
+
+        input, select, textarea, button {
+            padding: 10px;
+            margin: 10px;
+            border-radius: 8px;
+            border: none;
+            font-size: 1em;
+        }
+
+        button {
+            background: #00c6ff;
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #0072ff;
+        }
+
+        table {
+            width: 90%;
+            border-collapse: collapse;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+
+        th {
+            background: rgba(255,255,255,0.1);
+        }
+
+        img {
+            border-radius: 8px;
+        }
+
+        @keyframes fadeIn {
+            from {opacity: 0; transform: translateY(-20px);}
+            to {opacity: 1; transform: translateY(0);}
+        }
+    </style>
+</head>
+<body>
+    <h1>StapuBox Tournament Dashboard</h1>
+
+    <form id="addTournamentForm">
+        <input type="text" name="name" placeholder="Tournament Name" required>
+        <input type="text" name="level" placeholder="Level" required>
+        <input type="date" name="start_date" required>
+        <input type="date" name="end_date" required>
+        <input type="url" name="official_url" placeholder="Official URL" required>
+        <input type="url" name="streaming_links" placeholder="Streaming Links">
+        <input type="url" name="image_url" placeholder="Image URL">
+        <textarea name="summary" placeholder="Summary (max 50 words)" maxlength="50"></textarea><br>
+        <button type="submit">Add Tournament</button>
+    </form>
+
+    <div class="filters">
+        <label>Sport: <input type="text" id="sportFilter" placeholder="Enter sport name"></label>
+        <label>Level:
+            <select id="levelFilter">
+                <option value="">All</option>
+                <option value="Corporate">Corporate</option>
+                <option value="School">School</option>
+                <option value="College/University">College/University</option>
+                <option value="Club/Academy">Club/Academy</option>
+                <option value="District">District</option>
+                <option value="State">State</option>
+                <option value="Zonal/Regional">Zonal/Regional</option>
+                <option value="National">National</option>
+                <option value="International">International</option>
+            </select>
+        </label>
+        <button id="filterBtn">Filter</button>
+    </div>
+
+    <table id="tournamentTable">
+        <thead>
+            <tr>
+                <th>Name</th><th>Level</th><th>Start Date</th><th>End Date</th>
+                <th>Official URL</th><th>Streaming Links</th><th>Image</th><th>Summary</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        function fetchTournaments() {
+            var sport = $('#sportFilter').val();
+            var level = $('#levelFilter').val();
+            var url = 'http://127.0.0.1:5000/tournaments';
+
+            if (sport || level) {
+                url += '?';
+                if (sport) url += 'sport=' + sport;
+                if (sport && level) url += '&';
+                if (level) url += 'level=' + level;
+            }
+
+            $.ajax({
+                url: url,
+                method: 'GET',
+                success: function(data) {
+                    $('#tournamentTable tbody').empty();
+                    data.forEach(function(tournament) {
+                        $('#tournamentTable tbody').append(
+                            `<tr>
+                                <td>${tournament.name}</td>
+                                <td>${tournament.level}</td>
+                                <td>${tournament.start_date}</td>
+                                <td>${tournament.end_date}</td>
+                                <td><a href='${tournament.official_url}' target='_blank'>Link</a></td>
+                                <td><a href='${tournament.streaming_links}' target='_blank'>Stream</a></td>
+                                <td><img src='${tournament.image_url}' width='50'></td>
+                                <td>${tournament.summary}</td>
+                            </tr>`
+                        );
+                    });
+                }
+            });
+        }
+
+        $(document).ready(function() {
+            fetchTournaments();
+
+            $('#filterBtn').click(function() {
+                fetchTournaments();
+            });
+
+            $('#addTournamentForm').submit(function(e) {
+                e.preventDefault();
+                var formData = {};
+                $(this).serializeArray().forEach(function(field) {
+                    formData[field.name] = field.value;
+                });
+
+                $.ajax({
+                    url: 'http://127.0.0.1:5000/add_tournament',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(formData),
+                    success: function(response) {
+                        alert(response.message);
+                        fetchTournaments();
+                        $('#addTournamentForm')[0].reset();
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
